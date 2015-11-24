@@ -206,7 +206,6 @@ def swissPairings():
 
         temp = (standings[0][0], standings[0][1], standings[j][0],
                 standings[j][1])
-        print "Creating pair: " , standings[0][1], "--vs--", standings[j][1]
         standings.pop(0)
         standings.pop(j-1)
 
