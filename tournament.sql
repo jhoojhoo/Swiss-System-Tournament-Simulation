@@ -6,16 +6,12 @@
 -- You can write comments in this file by starting them with two dashes, like
 -- these lines here.
 
-DROP DATABASE IF EXISTS tournament;
-CREATE DATABASE tournament;
-\c tournament;
-
 DROP TABLE IF EXISTS match_history;
 DROP TABLE IF EXISTS players;
 
 -- Create a table to store all players and their key statistics.
 CREATE TABLE players(
-    id SERIAL UNIQUE PRIMARY KEY,
+    id SERIAL UNIQUE,
     name TEXT NOT NULL,
     wins INT NOT NULL DEFAULT 0,
     losses INT NOT NULL DEFAULT 0,
@@ -24,8 +20,7 @@ CREATE TABLE players(
 
 -- Create a table to store the match history of the tournament.
 CREATE TABLE match_history(
-    match_id SERIAL PRIMARY KEY,
-    winner_id INT,
-    loser_id INT,
-    CHECK (winner_id <> loser_id)
-);
+    id INT REFERENCES players(id),
+    op_id INT NOT NULL
+    );
+
