@@ -6,16 +6,20 @@
 import psycopg2
 import random
 
-def connect():
+def connect(database_name="tournament"):
     """Connect to the PostgreSQL database.  Returns a database connection."""
-
-    return psycopg2.connect("dbname=tournament")
+    try:
+        db = psycopg2.connect("dbname={}".format(database_name))
+        c = db.cursor()
+        return db, c
+    except:
+        print "ERROR: Could not connect to database '", database_name,"'."
 
 def deleteMatches():
     """Remove all the match records from the database."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
+
     query1 = '''UPDATE players SET wins = 0, losses = 0, matches_played = 0'''
     query2 = '''DELETE FROM match_history'''
 
@@ -29,8 +33,7 @@ def deleteMatches():
 def deletePlayers():
     """Remove all the player records from the database."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     query1 = '''DELETE FROM players'''
     c.execute(query1)
     db.commit()
@@ -39,13 +42,12 @@ def deletePlayers():
 def countPlayers():
     """Returns the number of players currently registered."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     query1 = '''SELECT count(*) FROM players'''
     c.execute(query1)
-    rows = c.fetchall()
+    value = c.fetchone()
     db.close()
-    return rows[0][0]
+    return value[0]
 
 def registerPlayer(name):
     """Adds a player to the tournament database.
@@ -56,8 +58,8 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
-    db = connect()
-    c = db.cursor()
+
+    db, c = connect()
 
     query1 = '''INSERT INTO players (name) VALUES (%s)'''
     c.execute(query1, (name,))
@@ -78,8 +80,8 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
-    db = connect()
-    c = db.cursor()
+
+    db, c = connect()
 
     # SQL Query: Fetches the standings ordered by wins.
     query1 = '''SELECT id, name, wins, matches_played
@@ -108,8 +110,8 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
-    db = connect()
-    c = db.cursor()
+
+    db, c = connect()
 
     # Update the winning player's stats.
     query1 = '''UPDATE players SET
@@ -142,8 +144,7 @@ def reportBye(winner):
 
     """
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
 
     # SQL Query: Update the player statistics.
     query1 = '''UPDATE players SET wins=wins+1, matches_played=matches_played+1 WHERE id = %s'''
@@ -172,8 +173,8 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
-    db = connect()
-    c = db.cursor()
+
+    db, c = connect()
     standings = playerStandings()
 
     ret = []
@@ -221,15 +222,14 @@ def checkBye(p1):
         p1: Player to check if they had a bye.
     """
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
 
     # SQL Query: Searches the player's match history for a -1 opponent (bye).
     query1 = '''SELECT count(*) FROM match_history
-                WHERE (id = %s and op_id = -1) or (id = -1 and op_id = %s)
+                WHERE (winner_id = %s and loser_id = -1) or (winner_id = -1 and loser_id = %s)
              '''
     c.execute(query1, (p1,p1,))
-    count = c.fetchall()[0][0]
+    count = c.fetchone()[0]
 
     if count==0:
         return False
@@ -246,13 +246,12 @@ def rematchCheck(p1, p2):
 
     Returns True if the match is a rematch.  False otherwise."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
 
     # SQL Query: Return the number of matches that p1 and p2 were BOTH playing in.
     rematch_query = '''SELECT count(*) FROM match_history
-                        WHERE (id = %s AND op_id = %s)
-                        OR (id = %s AND op_id = %s)'''
+                        WHERE (winner_id = %s AND loser_id = %s)
+                        OR (winner_id = %s AND loser_id = %s)'''
 
     c.execute(rematch_query, (p1,p2,p2,p1,))
     ret = c.fetchall()
@@ -277,6 +276,7 @@ def determineWinner(p1, p2):
 
     Returns a tuple of (winners id, losers id).
     """
+
     if random.random() > .5:
         return (p1,p2)
     else:
@@ -292,11 +292,11 @@ def OMWcalculator(p):
 
     Returns the OMW for the input player tuple.
     """
-    db = connect()
-    c = db.cursor()
+
+    db, c = connect()
 
     # SQL Query: Retrieve the total match history of a player.
-    query1 = '''SELECT * FROM match_history WHERE id = %s or op_id = %s'''
+    query1 = '''SELECT * FROM match_history WHERE winner_id = %s or loser_id = %s'''
     c.execute(query1, (p[0],p[0],))
     rows = c.fetchall()
 
@@ -304,15 +304,15 @@ def OMWcalculator(p):
 
     for row in rows:
 
-        # If player p is listed in the 'id' column for a specific match in
-        # the match_history table, then add the 'op_id' to p's opponent history.
-        # Skip bye matches (value=-1).
+        # If player p is listed in the 'winner_id' column for a specific match in
+        # the match_history table, then add the 'loser_id' to p's opponent
+        # history.  Skip bye matches (value=-1).
         if p[0]==row[0] and row[1]!=-1:
             opponent_history.append(row[1])
 
-        # Otherwise, p is entered in the 'op_id' column and the opponent
-        # is entered in the 'id' column.  Append the 'id' entry as the
-        # opponent. Skip bye matches (value=-1).
+        # Otherwise, p is entered in the 'loser_id' column and the opponent
+        # is entered in the 'winner_id' column.  Append the 'winner_id'
+        # entry as the opponent. Skip bye matches (value=-1).
         elif row[0]!=-1:
             opponent_history.append(row[0])
 
@@ -320,8 +320,8 @@ def OMWcalculator(p):
     for opponent in opponent_history:
         query2 = '''SELECT wins FROM players WHERE id = %s'''
         c.execute(query2, (opponent,))
-        wins = c.fetchall()
-        omw += wins[0][0]
+        wins = c.fetchone()[0]
+        omw += wins
 
     return omw
 
