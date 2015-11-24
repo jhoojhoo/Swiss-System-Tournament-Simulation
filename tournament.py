@@ -6,16 +6,16 @@
 import psycopg2
 import random
 
-def connect():
+def connect(database_name="tournament"):
     """Connect to the PostgreSQL database.  Returns a database connection."""
 
-    return psycopg2.connect("dbname=tournament")
-
+    db = psycopg2.connect("dbname={}".format(database_name))
+    c = db.cursor()
+    return db, c
 def deleteMatches():
     """Remove all the match records from the database."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     query1 = '''UPDATE players SET wins = 0, losses = 0, matches_played = 0'''
     query2 = '''DELETE FROM match_history'''
 
@@ -29,8 +29,7 @@ def deleteMatches():
 def deletePlayers():
     """Remove all the player records from the database."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     query1 = '''DELETE FROM players'''
     c.execute(query1)
     db.commit()
@@ -39,8 +38,7 @@ def deletePlayers():
 def countPlayers():
     """Returns the number of players currently registered."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     query1 = '''SELECT count(*) FROM players'''
     c.execute(query1)
     rows = c.fetchall()
@@ -56,8 +54,8 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
-    db = connect()
-    c = db.cursor()
+
+    db, c = connect()
 
     query1 = '''INSERT INTO players (name) VALUES (%s)'''
     c.execute(query1, (name,))
@@ -78,8 +76,8 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
-    db = connect()
-    c = db.cursor()
+
+    db, c = connect()
 
     # SQL Query: Fetches the standings ordered by wins.
     query1 = '''SELECT id, name, wins, matches_played
@@ -108,8 +106,8 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
-    db = connect()
-    c = db.cursor()
+
+    db, c = connect()
 
     # Update the winning player's stats.
     query1 = '''UPDATE players SET
@@ -142,8 +140,7 @@ def reportBye(winner):
 
     """
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
 
     # SQL Query: Update the player statistics.
     query1 = '''UPDATE players SET wins=wins+1, matches_played=matches_played+1 WHERE id = %s'''
@@ -172,8 +169,8 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
-    db = connect()
-    c = db.cursor()
+
+    db, c = connect()
     standings = playerStandings()
 
     ret = []
@@ -221,8 +218,7 @@ def checkBye(p1):
         p1: Player to check if they had a bye.
     """
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
 
     # SQL Query: Searches the player's match history for a -1 opponent (bye).
     query1 = '''SELECT count(*) FROM match_history
@@ -246,8 +242,7 @@ def rematchCheck(p1, p2):
 
     Returns True if the match is a rematch.  False otherwise."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
 
     # SQL Query: Return the number of matches that p1 and p2 were BOTH playing in.
     rematch_query = '''SELECT count(*) FROM match_history
@@ -292,8 +287,7 @@ def OMWcalculator(p):
 
     Returns the OMW for the input player tuple.
     """
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
 
     # SQL Query: Retrieve the total match history of a player.
     query1 = '''SELECT * FROM match_history WHERE id = %s or op_id = %s'''
