@@ -122,7 +122,7 @@ def reportMatch(winner, loser):
                 WHERE id = %s'''
 
     # Update the match history.
-    query3 = '''INSERT INTO match_history VALUES (%s, %s)'''
+    query3 = '''INSERT INTO match_history (winner_id, loser_id) VALUES (%s, %s)'''
 
     c.execute(query1, (winner,))
     c.execute(query2, (loser,))
@@ -146,7 +146,7 @@ def reportBye(winner):
     query1 = '''UPDATE players SET wins=wins+1, matches_played=matches_played+1 WHERE id = %s'''
 
     # SQL Query: Update the match_history. -1 value for bye matches.
-    query2 = '''INSERT INTO match_history VALUES (%s, -1)'''
+    query2 = '''INSERT INTO match_history (winner_id, loser_id) VALUES (%s, -1)'''
 
     c.execute(query1, (winner,))
     c.execute(query2, (winner,))
@@ -222,9 +222,9 @@ def checkBye(p1):
 
     # SQL Query: Searches the player's match history for a -1 opponent (bye).
     query1 = '''SELECT count(*) FROM match_history
-                WHERE (id = %s and op_id = -1) or (id = -1 and op_id = %s)
+                WHERE (winner_id = %s and loser_id = -1)
              '''
-    c.execute(query1, (p1,p1,))
+    c.execute(query1, (p1,))
     count = c.fetchone()[0]
 
     if count==0:
@@ -246,8 +246,8 @@ def rematchCheck(p1, p2):
 
     # SQL Query: Return the number of matches that p1 and p2 were BOTH playing in.
     rematch_query = '''SELECT count(*) FROM match_history
-                        WHERE (id = %s AND op_id = %s)
-                        OR (id = %s AND op_id = %s)'''
+                        WHERE (winner_id = %s AND loser_id = %s)
+                        OR (winner_id = %s AND loser_id = %s)'''
 
     c.execute(rematch_query, (p1,p2,p2,p1,))
     ret = c.fetchone()
@@ -290,32 +290,33 @@ def OMWcalculator(p):
     db, c = connect()
 
     # SQL Query: Retrieve the total match history of a player.
-    query1 = '''SELECT * FROM match_history WHERE id = %s or op_id = %s'''
+    query1 = '''SELECT * FROM match_history WHERE winner_id = %s or loser_id = %s'''
     c.execute(query1, (p[0],p[0],))
     rows = c.fetchall()
 
     opponent_history = []
 
     for row in rows:
-
-        # If player p is listed in the 'id' column for a specific match in
-        # the match_history table, then add the 'op_id' to p's opponent history.
+    #(match_id, winner_id, loser_id)
+        # If player p is listed in the 'winner_id' column for a specific match in
+        # the match_history table, then add the 'loser_id' to p's opponent history.
         # Skip bye matches (value=-1).
-        if p[0]==row[0] and row[1]!=-1:
+        if p[0]==row[1] and row[2]!=-1:
+            opponent_history.append(row[2])
+
+        # Otherwise, p is entered in the 'winner_id' column and the opponent
+        # is entered in the 'winner_id' column.  Append the 'winner_id' entry as the
+        # opponent. Skip bye matches (value=-1).
+        elif row[2]!=-1:
             opponent_history.append(row[1])
 
-        # Otherwise, p is entered in the 'op_id' column and the opponent
-        # is entered in the 'id' column.  Append the 'id' entry as the
-        # opponent. Skip bye matches (value=-1).
-        elif row[0]!=-1:
-            opponent_history.append(row[0])
-
     omw = 0
+    print "Opponent history (", p[1], "): ", opponent_history
     for opponent in opponent_history:
         query2 = '''SELECT wins FROM players WHERE id = %s'''
         c.execute(query2, (opponent,))
-        wins = c.fetchone()
-        omw += wins[0]
+        wins = c.fetchone()[0]
+        omw += wins
 
     return omw
 
