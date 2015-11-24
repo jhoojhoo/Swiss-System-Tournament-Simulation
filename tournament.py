@@ -41,9 +41,9 @@ def countPlayers():
     db, c = connect()
     query1 = '''SELECT count(*) FROM players'''
     c.execute(query1)
-    rows = c.fetchall()
+    count = c.fetchone()
     db.close()
-    return rows[0][0]
+    return count[0]
 
 def registerPlayer(name):
     """Adds a player to the tournament database.
@@ -225,7 +225,7 @@ def checkBye(p1):
                 WHERE (id = %s and op_id = -1) or (id = -1 and op_id = %s)
              '''
     c.execute(query1, (p1,p1,))
-    count = c.fetchall()[0][0]
+    count = c.fetchone()[0]
 
     if count==0:
         return False
@@ -250,10 +250,10 @@ def rematchCheck(p1, p2):
                         OR (id = %s AND op_id = %s)'''
 
     c.execute(rematch_query, (p1,p2,p2,p1,))
-    ret = c.fetchall()
+    ret = c.fetchone()
 
     # If p1 and p2 never played each other, return False.
-    if ret[0][0] == 0:
+    if ret[0] == 0:
         return False
 
     # Otherwise, return True.
@@ -314,8 +314,8 @@ def OMWcalculator(p):
     for opponent in opponent_history:
         query2 = '''SELECT wins FROM players WHERE id = %s'''
         c.execute(query2, (opponent,))
-        wins = c.fetchall()
-        omw += wins[0][0]
+        wins = c.fetchone()
+        omw += wins[0]
 
     return omw
 
