@@ -11,6 +11,7 @@ def connect():
 
     return psycopg2.connect("dbname=tournament")
 
+
 def deleteMatches():
     """Remove all the match records from the database."""
 
@@ -25,6 +26,8 @@ def deleteMatches():
     c.execute(query2)
     db.commit()
     db.close()
+
+
 
 def deletePlayers():
     """Remove all the player records from the database."""
@@ -80,8 +83,6 @@ def playerStandings():
     """
     db = connect()
     c = db.cursor()
-
-    # SQL Query: Fetches the standings ordered by wins.
     query1 = '''SELECT id, name, wins, matches_played
                 FROM players
                 ORDER BY wins DESC
@@ -100,6 +101,7 @@ def playerStandings():
                 standings[i+1] = temp
 
     return standings
+
 
 def reportMatch(winner, loser):
     """Records the outcome of a single match between two players.
@@ -132,31 +134,7 @@ def reportMatch(winner, loser):
 
     db.commit()
     db.close()
-
-def reportBye(winner):
-    """Records a bye match for a player.  Bye matches will be stored as
-    an integer value of -1 in the match_history table.
-
-    Args:
-        winner: the id number of the player who is receiving the bye.
-
-    """
-
-    db = connect()
-    c = db.cursor()
-
-    # SQL Query: Update the player statistics.
-    query1 = '''UPDATE players SET wins=wins+1, matches_played=matches_played+1 WHERE id = %s'''
-
-    # SQL Query: Update the match_history. -1 value for bye matches.
-    query2 = '''INSERT INTO match_history VALUES (%s, -1)'''
-
-    c.execute(query1, (winner,))
-    c.execute(query2, (winner,))
-
-    db.commit()
-    db.close()
-
+ 
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
   
@@ -181,61 +159,24 @@ def swissPairings():
     # Create pairings and pop each created pair from the 'standings' as they
     # are made.  Continue until no players are left in the standings.
     while len(standings) > 0:
-        j=1
-
-        # If there are an odd number of players, assign the worst player a
-        # bye.  Then continue to pair the other players.
-        if len(standings)%2 != 0:
-
-            # Check to see if the worst player already had a bye.  If
-            # yes, give the bye game to the next worst player and pop them
-            # from the standings.
-            k=1
-            while checkBye(standings[len(standings)- k][0]) and len(standings) - k >= 0:
-                k+=1
-
-            reportBye(standings[len(standings)- k][0])
-            standings.pop(len(standings)-k)
-
+        j = 1
 
         # Check to see if the pair is a rematch.  If yes, increment j to the
         # next possible match.  Otherwise create the pair and pop them from the
         # standings.
         while j < len(standings)-1 and rematchCheck(standings[0][0],standings[j][0]):
-            j+=1
+            j += 1
 
         temp = (standings[0][0], standings[0][1], standings[j][0],
                 standings[j][1])
-        print "Creating pair: " , standings[0][1], "--vs--", standings[j][1]
         standings.pop(0)
         standings.pop(j-1)
-
         ret.append(temp)
 
     db.close()
     return ret
 
-def checkBye(p1):
-    """ Returns true if the input player has already had a bye match.
 
-    Args:
-        p1: Player to check if they had a bye.
-    """
-
-    db = connect()
-    c = db.cursor()
-
-    # SQL Query: Searches the player's match history for a -1 opponent (bye).
-    query1 = '''SELECT count(*) FROM match_history
-                WHERE (id = %s and op_id = -1) or (id = -1 and op_id = %s)
-             '''
-    c.execute(query1, (p1,p1,))
-    count = c.fetchall()[0][0]
-
-    if count==0:
-        return False
-    else:
-        return True
 
 def rematchCheck(p1, p2):
     """ Returns true or false based on whether the two players have played
@@ -250,7 +191,7 @@ def rematchCheck(p1, p2):
     db = connect()
     c = db.cursor()
 
-    # SQL Query: Return the number of matches that p1 and p2 were BOTH playing in.
+    # Return the number of matches that p1 and p2 were BOTH playing in.
     rematch_query = '''SELECT count(*) FROM match_history
                         WHERE (id = %s AND op_id = %s)
                         OR (id = %s AND op_id = %s)'''
@@ -296,7 +237,6 @@ def OMWcalculator(p):
     db = connect()
     c = db.cursor()
 
-    # SQL Query: Retrieve the total match history of a player.
     query1 = '''SELECT * FROM match_history WHERE id = %s or op_id = %s'''
     c.execute(query1, (p[0],p[0],))
     rows = c.fetchall()
@@ -307,16 +247,16 @@ def OMWcalculator(p):
 
         # If player p is listed in the 'id' column for a specific match in
         # the match_history table, then add the 'op_id' to p's opponent history.
-        # Skip bye matches (value=-1).
-        if p[0]==row[0] and row[1]!=-1:
+        if p[0] == row[0]:
             opponent_history.append(row[1])
 
         # Otherwise, p is entered in the 'op_id' column and the opponent
         # is entered in the 'id' column.  Append the 'id' entry as the
-        # opponent. Skip bye matches (value=-1).
-        elif row[0]!=-1:
+        # opponent.
+        else:
             opponent_history.append(row[0])
 
+    #print p[1], "Opponent History: ", opponent_history
     omw = 0
     for opponent in opponent_history:
         query2 = '''SELECT wins FROM players WHERE id = %s'''
@@ -340,13 +280,14 @@ registerPlayer("Jordan")
 registerPlayer("Jess")
 registerPlayer("Peony")
 registerPlayer("Jane")
-registerPlayer("Marlin")
 
 # First round in the Swiss Tournament.
 pairs = swissPairings()
 
-# Simulate the final 3 rounds of the Swiss tournament.
-for i in range(0,3):
+# While the top ranked player has an equal number of wins to the second
+# ranked player, continue to create Swiss Pairs.  Otherwise, the
+# tournament is over and the top ranked player is the champion.
+while (playerStandings()[0][2] == playerStandings()[1][2]):
     pairs = swissPairings()
 
     # For each pair, determine the winner and loser randomly and report/post
