@@ -311,7 +311,6 @@ def OMWcalculator(p):
             opponent_history.append(row[1])
 
     omw = 0
-    print "Opponent history (", p[1], "): ", opponent_history
     for opponent in opponent_history:
         query2 = '''SELECT wins FROM players WHERE id = %s'''
         c.execute(query2, (opponent,))
@@ -334,7 +333,7 @@ registerPlayer("Jordan")
 registerPlayer("Jess")
 registerPlayer("Peony")
 registerPlayer("Jane")
-registerPlayer("Marlin")
+#registerPlayer("Marlin")
 
 # First round in the Swiss Tournament.
 pairs = swissPairings()
