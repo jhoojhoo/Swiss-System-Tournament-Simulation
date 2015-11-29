@@ -38,7 +38,7 @@ CREATE TABLE match_history(
     );
 
 -- Create a view to calculate and retrieve player OMWs.
-CREATE VIEW omw AS SELECT id, sum(ss.sum) as omw
+CREATE VIEW omw AS SELECT id, CAST(sum(ss.sum) AS int) AS omw
 FROM(
     SELECT a.id, sum(c.wins)
     FROM players AS a, match_history AS b, players

@@ -14,7 +14,7 @@ def connect(database_name="tournament"):
         return db, c
     except:
         print("<Error: could not connect to ", database_name, ">")
-        
+
 def deleteMatches():
     """Remove all the match records from the database."""
 
@@ -67,7 +67,7 @@ def registerPlayer(name):
     db.close()
 
 def playerStandings():
-    """Returns a list of the players and their win records, sorted by wins and then OMW.
+    """Returns a list of the players and their win records, sorted by wins.
     The first entry in the list should be the player in first place, or a
     player tied for first place if there is currently a tie.
     Returns:
@@ -81,22 +81,44 @@ def playerStandings():
     db, c = connect()
 
     # SQL Query: Fetches the standings ordered by wins.
-    query1 = '''SELECT id, name, wins, matches_played
-                FROM players
-                ORDER BY wins DESC
+    query1 = '''SELECT a.id, a.name, a.wins, a.matches_played
+                FROM players AS a
+                ORDER BY a.wins DESC
                 '''
     c.execute(query1)
     standings = c.fetchall()
+
     db.close()
 
-    # Loop through the standings and look for ties. If a tie exists,
-    # reorder by OMW and swap if necessary.
-    for i in range(0,len(standings)-1):
-        if standings[i][2] == standings[i+1][2]:
-            if (OMWcalculator(standings[i]) < OMWcalculator(standings[i+1])):
-                temp = standings[i]
-                standings[i] = standings[i+1]
-                standings[i+1] = temp
+    print "Standings: ", standings
+
+    return standings
+
+def finalStandings():
+    """Returns a list of the players and their win records, sorted by wins
+    --AND-- OMW. The first entry in the list should be the player in first
+    place, or a player tied for first place if there is currently a tie.
+    Returns:
+      A list of tuples, each of which contains (id, name, wins, matches):
+        id: the player's unique id (assigned by the database)
+        name: the player's full name (as registered)
+        wins: the number of matches the player has won
+        matches: the number of matches the player has played
+    """
+    db, c = connect()
+
+    # SQL Query: Fetches the standings ordered by wins AND omw.
+    query1 = '''SELECT a.id, a.name, a.wins, a.matches_played
+                FROM players AS a, omw AS b
+                WHERE a.id = b.id
+                ORDER BY a.wins DESC, b.omw DESC
+                '''
+    c.execute(query1)
+    standings = c.fetchall()
+
+    db.close()
+
+    print "Standings: ", standings
 
     return standings
 
@@ -342,7 +364,7 @@ for i in range(0,3):
 
 
 # Print the final standings.
-standings = playerStandings()
+standings = finalStandings()
 print "***** FINAL STANDINGS ****"
 for i in range(0, len(standings)):
     print str(i + 1), standings[i][1],
