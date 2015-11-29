@@ -8,10 +8,13 @@ import random
 
 def connect(database_name="tournament"):
     """Connect to the PostgreSQL database.  Returns a database connection."""
-
-    db = psycopg2.connect("dbname={}".format(database_name))
-    c = db.cursor()
-    return db, c
+    try:
+        db = psycopg2.connect("dbname={}".format(database_name))
+        c = db.cursor()
+        return db, c
+    except:
+        print("<Error: could not connect to ", database_name, ">")
+        
 def deleteMatches():
     """Remove all the match records from the database."""
 
@@ -47,10 +50,10 @@ def countPlayers():
 
 def registerPlayer(name):
     """Adds a player to the tournament database.
-  
+
     The database assigns a unique serial id number for the player.  (This
     should be handled by your SQL database schema, not in your Python code.)
-  
+
     Args:
       name: the player's full name (need not be unique).
     """
@@ -65,10 +68,8 @@ def registerPlayer(name):
 
 def playerStandings():
     """Returns a list of the players and their win records, sorted by wins and then OMW.
-
     The first entry in the list should be the player in first place, or a
     player tied for first place if there is currently a tie.
-
     Returns:
       A list of tuples, each of which contains (id, name, wins, matches):
         id: the player's unique id (assigned by the database)
@@ -101,7 +102,6 @@ def playerStandings():
 
 def reportMatch(winner, loser):
     """Records the outcome of a single match between two players.
-
     Args:
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
@@ -134,10 +134,8 @@ def reportMatch(winner, loser):
 def reportBye(winner):
     """Records a bye match for a player.  Bye matches will be stored as
     an integer value of -1 in the match_history table.
-
     Args:
         winner: the id number of the player who is receiving the bye.
-
     """
 
     db, c = connect()
@@ -156,12 +154,12 @@ def reportBye(winner):
 
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
-  
+
     Assuming that there are an even number of players registered, each player
     appears exactly once in the pairings.  Each player is paired with another
     player with an equal or nearly-equal win record, that is, a player
     adjacent to him or her in the standings.
-  
+
     Returns:
       A list of tuples, each of which contains (id1, name1, id2, name2)
         id1: the first player's unique id
@@ -213,7 +211,6 @@ def swissPairings():
 
 def checkBye(p1):
     """ Returns true if the input player has already had a bye match.
-
     Args:
         p1: Player to check if they had a bye.
     """
@@ -235,11 +232,9 @@ def checkBye(p1):
 def rematchCheck(p1, p2):
     """ Returns true or false based on whether the two players have played
     against each other in the tournament or not.
-
     Args:
         p1: First player.
         p2: Second player.
-
     Returns True if the match is a rematch.  False otherwise."""
 
     db, c = connect()
@@ -265,11 +260,9 @@ def rematchCheck(p1, p2):
 def determineWinner(p1, p2):
     """
     Determines the winner of a given match.
-
     Args:
         p1: First player id.
         p2: Second player id.
-
     Returns a tuple of (winners id, losers id).
     """
     if random.random() > .5:
@@ -281,10 +274,8 @@ def OMWcalculator(p):
     """
     Calculates the OMW of an input player tuple (id, name, wins, matches)
     returned from the playerStandings() method.
-
     Args:
         p: Player tuple of which OMW is to be calculated for.
-
     Returns the OMW for the input player tuple.
     """
     db, c = connect()
@@ -311,6 +302,7 @@ def OMWcalculator(p):
             opponent_history.append(row[1])
 
     omw = 0
+
     for opponent in opponent_history:
         query2 = '''SELECT wins FROM players WHERE id = %s'''
         c.execute(query2, (opponent,))
@@ -333,7 +325,7 @@ registerPlayer("Jordan")
 registerPlayer("Jess")
 registerPlayer("Peony")
 registerPlayer("Jane")
-#registerPlayer("Marlin")
+registerPlayer("Marlin")
 
 # First round in the Swiss Tournament.
 pairs = swissPairings()
