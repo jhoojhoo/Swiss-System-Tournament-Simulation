@@ -52,4 +52,3 @@ FROM(
     ) ss
 GROUP BY id
 ORDER BY omw;
-

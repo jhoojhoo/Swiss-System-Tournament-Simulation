@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#~/usr/bin/env python
 #
 # Test cases for tournament.py
 
@@ -135,5 +135,4 @@ if __name__ == '__main__':
     testReportMatches()
     testPairings()
     print "Success!  All tests pass!"
-
 
