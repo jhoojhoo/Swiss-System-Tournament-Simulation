@@ -1,6 +1,6 @@
 # Swiss Tournament Simulation
     The following program simulates a Swiss Elimination tournament with a variable number of participants.
-    Views are used on the Postgresql implementation for sorting standings by player Opponent Match Wins.
+    Views are used on the Postgresql implementation to sort standings by a player's Opponent Match Wins.
     
 ### Quick Start:
     - Extract all files in to a folder of your choice.
