@@ -34,8 +34,8 @@ CREATE TABLE match_history(
 
 -- Create a view to calculate and retrieve player OMWs. This table makes a
 -- union of a player's matches they won and the sum of their opponent's
--- wins _with_ matches the player's lost and the sum of their opponent's wins.
--- The third union stops players with a bye match from being omitted
+-- wins _with_ the matches the player's lost and the sum of their opponent's
+-- wins. The third union stops players with a bye match from being omitted
 -- from the player_standings view.
 CREATE VIEW omw AS SELECT id, CAST(sum(ss.sum) AS int) AS omw
 FROM(
