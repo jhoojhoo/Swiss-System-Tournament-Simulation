@@ -178,7 +178,6 @@ def swissPairings():
     db, c = connect()
     standings = playerStandings()
 
-    print "STANDINGS swiss", standings
     ret = []
 
     # Create pairings and pop each created pair from the 'standings' as they
@@ -306,16 +305,6 @@ for i in range(0,3):
     for pair in pairs:
         results = determineWinner(pair[0],pair[2])
         reportMatch(results[0],results[1])
-
-    db, c = connect()
-    query = '''select * from omw'''
-    c.execute(query)
-
-    omw = c.fetchall()
-    for row in omw:
-        print "OMW: ", row
-
-    db.close()
 
 # Print the final standings.
 standings = playerStandings()
