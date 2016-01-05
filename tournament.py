@@ -65,32 +65,6 @@ def registerPlayer(name):
     db.close()
 
 def playerStandings():
-    """Returns a list of the players and their win records, sorted by wins.
-    The first entry in the list should be the player in first place, or a
-    player tied for first place if there is currently a tie.
-    Returns:
-      A list of tuples, each of which contains (id, name, wins, matches):
-        id: the player's unique id (assigned by the database)
-        name: the player's full name (as registered)
-        wins: the number of matches the player has won
-        matches: the number of matches the player has played
-    """
-
-    db, c = connect()
-
-    # SQL Query: Fetches the standings ordered by wins.
-    query1 = '''SELECT a.id, a.name, a.wins, a.matches_played
-                FROM players AS a
-                ORDER BY a.wins DESC
-                '''
-    c.execute(query1)
-    standings = c.fetchall()
-
-    db.close()
-
-    return standings
-
-def finalStandings():
     """Returns a list of the players and their win records, sorted by wins
     --AND-- OMW. The first entry in the list should be the player in first
     place, or a player tied for first place if there is currently a tie.
@@ -104,13 +78,20 @@ def finalStandings():
     db, c = connect()
 
     # SQL Query: Fetches the standings ordered by wins AND omw.
-    query1 = '''SELECT a.id, a.name, a.wins, a.matches_played
-                FROM players AS a, omw AS b
-                WHERE a.id = b.id
-                ORDER BY a.wins DESC, b.omw DESC
-                '''
+    query1 = '''SELECT * FROM player_standings'''
+
     c.execute(query1)
     standings = c.fetchall()
+
+    # If simulation is in first round and the standings are empty due to the
+    # match_history table being empty, then manually query the current
+    # standings of which all players should, have 0 wins and 0 losses.
+    if len(standings) == 0:
+        query2 = '''SELECT a.id, a.name, a.wins, a.matches_played
+                FROM players AS a
+                ORDER BY a.wins DESC'''
+        c.execute(query2)
+        standings = c.fetchall()
 
     db.close()
 
@@ -197,6 +178,7 @@ def swissPairings():
     db, c = connect()
     standings = playerStandings()
 
+    print "STANDINGS swiss", standings
     ret = []
 
     # Create pairings and pop each created pair from the 'standings' as they
@@ -299,48 +281,6 @@ def determineWinner(p1, p2):
     else:
         return (p2,p1)
 
-def OMWcalculator(p):
-    """
-    Calculates the OMW of an input player tuple (id, name, wins, matches)
-    returned from the playerStandings() method.
-    Args:
-        p: Player tuple of which OMW is to be calculated for.
-    Returns the OMW for the input player tuple.
-    """
-    db, c = connect()
-
-    # SQL Query: Retrieve the total match history of a player.
-    query1 = '''SELECT * FROM match_history WHERE winner_id = %s or
-                loser_id = %s'''
-    c.execute(query1, (p[0],p[0],))
-    rows = c.fetchall()
-
-    opponent_history = []
-
-    for row in rows:
-    #(match_id, winner_id, loser_id)
-        # If player p is listed in the 'winner_id' column for a specific
-        # match in the match_history table, then add the 'loser_id' to
-        # p's opponent history. Skips bye matches (value=-1).
-        if p[0]==row[1] and row[2]!=-1:
-            opponent_history.append(row[2])
-
-        # Otherwise, p is entered in the 'winner_id' column and the opponent
-        # is entered in the 'winner_id' column.  Append the 'winner_id' entry
-        # as the opponent. Skip bye matches (value=-1).
-        elif row[2]!=-1:
-            opponent_history.append(row[1])
-
-    omw = 0
-
-    for opponent in opponent_history:
-        query2 = '''SELECT wins FROM players WHERE id = %s'''
-        c.execute(query2, (opponent,))
-        wins = c.fetchone()[0]
-        omw += wins
-
-    return omw
-
 '''***************************** TEST CASES *****************************'''
 # Clear the tables.
 deleteMatches()
@@ -357,9 +297,6 @@ registerPlayer("Peony")
 registerPlayer("Jane")
 registerPlayer("Marlin")
 
-# First round in the Swiss Tournament.
-#pairs = swissPairings()
-
 # Simulate the 3 rounds of the Swiss tournament.
 for i in range(0,3):
     pairs = swissPairings()
@@ -370,9 +307,18 @@ for i in range(0,3):
         results = determineWinner(pair[0],pair[2])
         reportMatch(results[0],results[1])
 
+    db, c = connect()
+    query = '''select * from omw'''
+    c.execute(query)
+
+    omw = c.fetchall()
+    for row in omw:
+        print "OMW: ", row
+
+    db.close()
 
 # Print the final standings.
-standings = finalStandings()
+standings = playerStandings()
 print "***** FINAL STANDINGS ****"
 for i in range(0, len(standings)):
     print str(i + 1), standings[i][1],

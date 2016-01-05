@@ -41,14 +41,31 @@ CREATE TABLE match_history(
 CREATE VIEW omw AS SELECT id, CAST(sum(ss.sum) AS int) AS omw
 FROM(
     SELECT a.id, sum(c.wins)
-    FROM players AS a, match_history AS b, players
-        AS c WHERE a.id = b.winner_id AND b.loser_id = c.id
+    FROM players AS a, match_history AS b, players AS c
+    WHERE a.id = b.winner_id AND b.loser_id = c.id
+
     GROUP BY a.id
 
     UNION
 
-    SELECT a.id, sum(c.wins) FROM players AS a, match_history AS b, players AS c
+    SELECT a.id, sum(c.wins)
+    FROM players AS a, match_history AS b, players AS c
         WHERE a.id = b.loser_id AND b.winner_id = c.id GROUP BY a.id
+
+    UNION
+
+    SELECT a.id, null
+    FROM players AS a, match_history AS b
+    WHERE a.id = b.winner_id AND b.loser_id = -1
+    GROUP BY a.id
+
     ) ss
 GROUP BY id
 ORDER BY omw;
+
+-- Create a view to list the current player standings.
+CREATE VIEW player_standings AS
+    SELECT a.id, a.name, a.wins, a.matches_played
+    FROM players AS a, omw AS b
+    WHERE a.id = b.id
+ORDER BY a.wins DESC, b.omw DESC
