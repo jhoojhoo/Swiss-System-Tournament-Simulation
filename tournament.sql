@@ -1,10 +1,5 @@
 -- Table definitions for the tournament project.
---
--- Put your SQL 'create table' statements in this file; also 'create view'
--- statements if you choose to use it.
---
--- You can write comments in this file by starting them with two dashes, like
--- these lines here.
+
 
 -- Drop all existing connections to 'tournament' database except your own.
 SELECT pg_terminate_backend(pg_stat_activity.pid)
@@ -37,9 +32,9 @@ CREATE TABLE match_history(
     CHECK (winner_id <> loser_id)
     );
 
--- Create a view to calculate and retrieve player OMWs. Union player's
--- with matches they won and the sum of their opponent's wins with
--- matches the player's lost and the sum of their opponent's wins.
+-- Create a view to calculate and retrieve player OMWs. This table makes a
+-- union of a player's matches they won and the sum of their opponent's
+-- wins _with_ matches the player's lost and the sum of their opponent's wins.
 -- The third union stops players with a bye match from being omitted
 -- from the player_standings view.
 CREATE VIEW omw AS SELECT id, CAST(sum(ss.sum) AS int) AS omw
