@@ -17,4 +17,4 @@
     
 ### Creator:
     - David Jhoo
-    - Udacity
+    - Udacity (provides basic plumbing)
